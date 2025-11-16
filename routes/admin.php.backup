@@ -1,0 +1,25 @@
+<?php
+
+use App\Livewire\Admin\AdminDashboard;
+use App\Livewire\Admin\DataGuru;
+use App\Livewire\Admin\DataSiswa;
+use App\Livewire\Admin\ManajemenKelas;
+use App\Livewire\Admin\ManajemenMapel;
+use App\Livewire\Admin\ManajemenJadwal;
+use App\Livewire\Admin\ManajemenNilai;
+use App\Livewire\Admin\LaporanAkademik;
+
+// Dashboard
+Route::get('/dashboard', AdminDashboard::class)->name('dashboard');
+// Data Master
+Route::get('/guru', DataGuru::class)->name('guru.index');
+Route::get('/siswa', DataSiswa::class)->name('siswa.index');
+Route::get('/kelas', ManajemenKelas::class)->name('kelas.index');
+Route::get('/mapel', ManajemenMapel::class)->name('mapel.index');
+
+// Akademik
+Route::get('/jadwal', ManajemenJadwal::class)->name('jadwal.index');
+Route::get('/nilai', ManajemenNilai::class)->name('nilai.index');
+
+// Laporan
+Route::get('/laporan', LaporanAkademik::class)->name('laporan.index');

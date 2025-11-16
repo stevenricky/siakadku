@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    
+    --breakpoint-lg: 1024px;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ========== GRADIENT BACKGROUND FIX ========== */
+/* Hapus background dari body dan pindah ke html */
+html {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    background-attachment: fixed;
+    background-size: cover;
+    min-height: 100vh;
+}
+
+html.dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    background-attachment: fixed;
+    background-size: cover;
+}
+
+/* Body transparan */
+body {
+    background: transparent !important;
+    min-height: 100vh;
+}
+
+/* Pastikan semua container utama transparan */
+.min-h-screen {
+    background: transparent !important;
+}
+
+.main-content-transition {
+    background: transparent !important;
+}
+
+/* Perbaikan untuk card - gunakan backdrop blur */
+.bg-white {
+    background-color: rgb(255 255 255 / 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+.dark .bg-white {
+    background-color: rgb(30 41 59 / 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+.bg-gray-50 {
+    background-color: rgb(248 250 252 / 0.9) !important;
+    backdrop-filter: blur(8px);
+}
+
+.dark .bg-gray-50 {
+    background-color: rgb(15 23 42 / 0.9) !important;
+    backdrop-filter: blur(8px);
+}
+
+/* Optional: Subtle texture */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(255, 119, 198, 0.1) 0%, transparent 25%);
+    background-size: 50% 50%, 50% 50%;
+    background-position: 0 0, 100% 0;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.dark body::before {
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(120, 119, 198, 0.05) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(255, 119, 198, 0.05) 0%, transparent 25%);
+}
+
+/* ========== EXISTING STYLES ========== */
+/* Icon toggle styles */
+html.dark #light-icon {
+    display: none;
+}
+
+html.dark #dark-icon {
+    display: block;
+}
+
+html:not(.dark) #light-icon {
+    display: block;
+}
+
+html:not(.dark) #dark-icon {
+    display: none;
+}
+
+/* Main content transitions */
+.main-content-expanded {
+    margin-left: 16rem;
+}
+
+.main-content-collapsed {
+    margin-left: 5rem;
+}
+
+@media (max-width: 1023px) {
+    .main-content-expanded,
+    .main-content-collapsed {
+        margin-left: 0;
+    }
+}
+
+[x-cloak] { 
+    display: none; 
+}
+
+/* Pastikan konten tidak overflow di mobile */
+@media (max-width: 768px) {
+    .container-mobile {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        overflow-x: hidden;
+    }
+    
+    /* Improve touch targets untuk mobile */
+    button, a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Fix untuk sidebar transition */
+.sidebar-transition {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Pastikan main content tidak tertimpa */
+.main-content-expanded {
+    margin-left: 0;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+@media (min-width: 1024px) {
+    .main-content-expanded {
+        margin-left: 16rem; /* w-64 */
+    }
+}
+
+.main-content-collapsed {
+    margin-left: 0;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+@media (min-width: 1024px) {
+    .main-content-collapsed {
+        margin-left: 5rem; /* w-20 */
+    }
+}
+
+/* Fix untuk overflow */
+body.sidebar-open {
+    overflow: hidden;
+}
+
+/* Pastikan z-index konsisten */
+.sidebar-overlay {
+    z-index: 40;
+}
+
+.sidebar-container {
+    z-index: 50;
+}
+
+.mobile-toggle-btn {
+    z-index: 60;
+}
+
+/* Enhanced Glass Effects untuk Component Lain */
+.glass-sidebar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-sidebar {
+    background: rgba(15, 23, 42, 0.9);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.glass-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-header {
+    background: rgba(15, 23, 42, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth transitions untuk semua element glass */
+.glass-sidebar,
+.glass-header {
+    transition: all 0.5s ease;
+}
+
+/* Pastikan text readable di glass background */
+.glass-sidebar .text-gray-900,
+.glass-header .text-gray-900 {
+    color: rgba(17, 24, 39, 0.9);
+}
+
+.dark .glass-sidebar .text-gray-900,
+.dark .glass-header .text-gray-900 {
+    color: rgba(255, 255, 255, 0.9);
+}
