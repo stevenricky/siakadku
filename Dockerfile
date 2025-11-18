@@ -39,5 +39,5 @@ RUN npm install \
 
 EXPOSE 8000
 
-# Start Laravel development server
+# Start Laravel development server - INI YANG PENTING!
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
