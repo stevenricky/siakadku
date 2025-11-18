@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\ProfileController;
+use Illuminate\Http\Request;
 
 // =============================================================================
 // DEBUG ROUTES - TEMPORARY
@@ -48,20 +52,15 @@ Route::get('/test-view', function() {
     return view('welcome');
 });
 
+// =============================================================================
+// EXISTING ROUTES
+// =============================================================================
 
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\ProfileController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-
-
-
-
-// routes/web.php - tambahkan
+// Test maintenance middleware
 Route::get('/test-maintenance-middleware', function () {
     return "Jika Anda melihat ini, middleware maintenance TIDAK berjalan";
 })->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
+
 // =============================================================================
 // MAINTENANCE ROUTES 
 // =============================================================================
@@ -72,39 +71,28 @@ Route::get('/maintenance-page', function () {
 Route::post('/maintenance-access', [App\Http\Controllers\MaintenanceController::class, 'access'])
     ->name('maintenance.access');
 
-// =============================================================================
-// ROUTE LAINNYA...
-// =============================================================================
-
-// Simple root route
+// Simple root route - temporary fix
 Route::get('/', function () {
-    if (auth()->check()) {
-        $user = auth()->user();
-        
-        return match($user->role) {
-            'admin' => redirect('/admin/dashboard'),
-            'guru' => redirect('/guru/dashboard'),
-            'siswa' => redirect('/siswa/dashboard'),
-            default => redirect('/login')
-        };
-    }
-    
-    // User belum login, redirect ke login
-    return redirect('/login');
+    return response()->json([
+        'status' => 'success',
+        'message' => 'SiakadKu Laravel Application',
+        'timestamp' => now(),
+        'routes' => [
+            '/test' => 'Test Laravel',
+            '/test-db' => 'Test Database', 
+            '/test-env' => 'Test Environment',
+            '/login' => 'Login Page'
+        ]
+    ]);
 });
-
-// routes/web.php - GANTI route login
 
 // Authentication routes dengan middleware maintenance
 Route::get('login', [LoginController::class, 'create'])
     ->name('login')
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
+    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
 
 Route::post('login', [LoginController::class, 'store'])
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
-
-
-
+    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
@@ -114,8 +102,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-    
-
 });
 
 // Theme toggle route
