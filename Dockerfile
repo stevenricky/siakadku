@@ -15,34 +15,28 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set working directory
 WORKDIR /var/www/html
 
 # Copy composer files
 COPY composer.json composer.lock* ./
 
-# Clear cache files before install
-RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
-
-# Install PHP dependencies
+# Install dependencies
 RUN composer install --optimize-autoloader --no-scripts --no-interaction --no-dev
 
-# Copy seluruh source code project
+# Copy app code
 COPY . .
 
-# Set permissions
+# Buat folder cache jika belum ada dan set permissions
+RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
 RUN chmod -R 775 storage bootstrap/cache
 
-# Laravel cache (production)
-RUN php artisan config:cache \
- && php artisan route:cache \
- && php artisan view:cache
+# Generate cache
+RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
 
-# Install Node.js dependencies & build Vite
-RUN npm install \
- && npm run build
+# Build assets
+RUN npm install && npm run build
 
 EXPOSE 8000
 
-# Start Laravel development server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Fix: Gunakan port dengan default value
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
