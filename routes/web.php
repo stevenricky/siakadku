@@ -1,5 +1,53 @@
 <?php
-// routes/web.php
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+
+// =============================================================================
+// DEBUG ROUTES - TEMPORARY
+// =============================================================================
+
+// Test basic Laravel
+Route::get('/test', function() {
+    return response()->json([
+        'status' => 'success', 
+        'message' => 'Laravel is running',
+        'timestamp' => now()
+    ]);
+});
+
+// Test database connection
+Route::get('/test-db', function() {
+    try {
+        DB::connection()->getPdo();
+        return response()->json([
+            'status' => 'success',
+            'database' => 'Connected successfully',
+            'driver' => DB::connection()->getDriverName()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'database' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Test environment
+Route::get('/test-env', function() {
+    return response()->json([
+        'app_env' => app()->environment(),
+        'app_debug' => config('app.debug'),
+        'app_url' => config('app.url'),
+        'db_connection' => config('database.default')
+    ]);
+});
+
+// Test view
+Route::get('/test-view', function() {
+    return view('welcome');
+});
+
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordController;
