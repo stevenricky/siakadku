@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
 # Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -25,6 +25,9 @@ RUN composer install --optimize-autoloader --no-scripts --no-interaction
 # Copy seluruh source code project
 COPY . .
 
+# Set permissions
+RUN chmod -R 775 storage bootstrap/cache
+
 # Laravel cache (production)
 RUN php artisan config:cache \
  && php artisan route:cache \
@@ -34,5 +37,7 @@ RUN php artisan config:cache \
 RUN npm install \
  && npm run build
 
-# Run PHP-FPM
-CMD ["php-fpm"]
+EXPOSE 8000
+
+# Start Laravel development server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
