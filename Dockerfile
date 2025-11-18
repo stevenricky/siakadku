@@ -1,7 +1,6 @@
-# Gunakan image PHP 8.2 FPM
 FROM php:8.2-fpm
 
-# Install dependencies sistem & PHP extensions
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -9,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     zip unzip git curl \
     nodejs npm \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install gd pdo pdo_mysql \
+ && docker-php-ext-install gd pdo pdo_mysql zip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -31,8 +30,8 @@ COPY . .
 RUN npm install
 RUN npm run build
 
-# Expose port (opsional, jika mau akses langsung container)
+# Expose port
 EXPOSE 8000
 
-# Jalankan PHP-FPM
+# Run PHP-FPM
 CMD ["php-fpm"]
