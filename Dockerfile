@@ -22,11 +22,11 @@ RUN composer install --no-dev --no-scripts --no-interaction --no-progress
 # Copy app code
 COPY . .
 
-# CREATE CACHE FOLDERS AND SET PERMISSIONS - INI YANG PENTING!
+# CREATE CACHE FOLDERS AND SET PERMISSIONS
 RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
 RUN chmod -R 775 bootstrap/cache storage
 RUN chown -R www-data:www-data bootstrap/cache storage
 
 EXPOSE 8000
-RUN php artisan migrate --force
+
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
