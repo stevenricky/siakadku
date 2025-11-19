@@ -1,19 +1,97 @@
 <?php
-// routes/web.php
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileController;
+use App\Http\Controllers\MaintenanceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
+// =============================================================================
+// RAILWAY FIX ROUTES - UNTUK PRODUCTION FIX
+// =============================================================================
+Route::get('/railway-fix', function () {
+    try {
+        $results = [];
+        
+        // 1. Disable maintenance mode
+        if (file_exists(storage_path('framework/down'))) {
+            \Illuminate\Support\Facades\Artisan::call('up');
+            $results[] = '✅ Maintenance mode disabled';
+        } else {
+            $results[] = '✅ Maintenance mode already disabled';
+        }
+        
+        // 2. Clear cache
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        $results[] = '✅ Config cache cleared';
+        
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        $results[] = '✅ Route cache cleared';
+        
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        $results[] = '✅ View cache cleared';
+        
+        // 3. Test database connection
+        try {
+            \Illuminate\Support\Facades\DB::connection()->getPdo();
+            $results[] = '✅ Database connected';
+        } catch (\Exception $e) {
+            $results[] = '❌ Database error: ' . $e->getMessage();
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Railway fix applied successfully',
+            'results' => $results,
+            'maintenance_mode' => false,
+            'timestamp' => now()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => env('APP_DEBUG') ? $e->getTrace() : 'Debug disabled'
+        ], 500);
+    }
+});
 
+Route::get('/railway-status', function () {
+    $isDown = file_exists(storage_path('framework/down'));
+    
+    try {
+        $dbConnected = \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbStatus = 'connected';
+    } catch (\Exception $e) {
+        $dbStatus = 'disconnected: ' . $e->getMessage();
+    }
+    
+    return response()->json([
+        'maintenance_mode' => $isDown,
+        'database_status' => $dbStatus,
+        'timestamp' => now(),
+        'app_env' => env('APP_ENV'),
+        'app_debug' => env('APP_DEBUG'),
+        'app_key_exists' => !empty(env('APP_KEY')),
+        'session_driver' => env('SESSION_DRIVER'),
+        'database_connection' => env('DB_CONNECTION')
+    ]);
+});
 
-
-// routes/web.php - tambahkan
+// =============================================================================
+// TEST ROUTES
+// =============================================================================
 Route::get('/test-maintenance-middleware', function () {
     return "Jika Anda melihat ini, middleware maintenance TIDAK berjalan";
-})->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
+});
+
+Route::get('/test-csrf', function () {
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId()
+    ]);
+});
+
 // =============================================================================
 // MAINTENANCE ROUTES 
 // =============================================================================
@@ -21,11 +99,11 @@ Route::get('/maintenance-page', function () {
     return view('maintenance');
 })->name('maintenance.page');
 
-Route::post('/maintenance-access', [App\Http\Controllers\MaintenanceController::class, 'access'])
+Route::post('/maintenance-access', [MaintenanceController::class, 'access'])
     ->name('maintenance.access');
 
 // =============================================================================
-// ROUTE LAINNYA...
+// CORE APPLICATION ROUTES
 // =============================================================================
 
 // Simple root route
@@ -41,23 +119,23 @@ Route::get('/', function () {
         };
     }
     
-    // User belum login, redirect ke login
     return redirect('/login');
 });
 
-// routes/web.php - GANTI route login
+// =============================================================================
+// AUTHENTICATION ROUTES - TANPA MAINTENANCE MIDDLEWARE
+// =============================================================================
+Route::get('login', [LoginController::class, 'create'])->name('login');
+Route::post('login', [LoginController::class, 'store']);
 
-// Authentication routes dengan middleware maintenance
-Route::get('login', [LoginController::class, 'create'])
-    ->name('login')
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
+// Sanctum CSRF cookie route
+Route::get('/sanctum/csrf-cookie', function (Request $request) {
+    return response()->json(['csrf_token' => csrf_token()]);
+});
 
-Route::post('login', [LoginController::class, 'store'])
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
-
-
-
-
+// =============================================================================
+// AUTHENTICATED ROUTES
+// =============================================================================
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
     
@@ -66,11 +144,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-    
-
 });
 
-// Theme toggle route
+// =============================================================================
+// THEME & UTILITY ROUTES
+// =============================================================================
 Route::post('/theme-toggle', function (Request $request) {
     $request->validate([
         'theme' => 'required|in:light,dark'
@@ -78,30 +156,47 @@ Route::post('/theme-toggle', function (Request $request) {
     
     $theme = $request->theme;
     return response()->json(['success' => true])
-        ->cookie('theme', $theme, 60 * 24 * 30, null, null, false, false); // 30 days
+        ->cookie('theme', $theme, 60 * 24 * 30, null, null, false, false);
 })->name('theme.toggle');
 
-// Health check route (untuk monitoring)
+// Health check route
 Route::get('/up', function () {
-    return response()->json(['status' => 'OK', 'timestamp' => now()]);
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        return response()->json([
+            'status' => 'OK', 
+            'timestamp' => now(),
+            'database' => 'Connected'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'Error',
+            'database' => 'Disconnected',
+            'message' => $e->getMessage()
+        ], 500);
+    }
 });
 
 // Storage route untuk file public
 Route::get('/storage/{path}', function ($path) {
-    return response()->file(storage_path("app/public/{$path}"));
+    $fullPath = storage_path("app/public/{$path}");
+    
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    
+    return response()->file($fullPath);
 })->where('path', '.*')->name('storage.local');
 
 // =============================================================================
-// TEST ROUTES - HAPUS ATAU KOMENTARI DI PRODUCTION
+// TEST NOTIFICATION ROUTES
 // =============================================================================
-// Route group untuk testing notifikasi
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/notif-siswa', function() {
         try {
             $user = \App\Models\User::where('role', 'siswa')->first();
             
             if ($user) {
-                // Create test notification secara langsung
                 $user->notifications()->create([
                     'type' => 'App\\Notifications\\TestNotification',
                     'data' => json_encode([
@@ -128,7 +223,6 @@ Route::prefix('test')->name('test.')->group(function () {
             $user = \App\Models\User::where('role', 'guru')->first();
             
             if ($user) {
-                // Create test notification secara langsung
                 $user->notifications()->create([
                     'type' => 'App\\Notifications\\TestNotification',
                     'data' => json_encode([
@@ -155,7 +249,6 @@ Route::prefix('test')->name('test.')->group(function () {
             $user = \App\Models\User::where('role', 'admin')->first();
             
             if ($user) {
-                // Create test notification secara langsung
                 $user->notifications()->create([
                     'type' => 'App\\Notifications\\TestNotification',
                     'data' => json_encode([
@@ -179,10 +272,8 @@ Route::prefix('test')->name('test.')->group(function () {
 });
 
 // =============================================================================
-// END TEST ROUTES
+// ROLE-BASED ROUTES
 // =============================================================================
-
-// Role-based routes dengan middleware
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     require __DIR__.'/admin.php';
 });
@@ -195,16 +286,6 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'siswa'])->group(fun
     require __DIR__.'/siswa.php';
 });
 
-// Unauthorized access page
-Route::get('/unauthorized', function () {
-    return view('errors.unauthorized');
-})->name('unauthorized');
-
-// Fallback untuk 404
-Route::fallback(function () {
-    return response()->view('errors.404', [], 404);
-});
-
 // Untuk Guru
 Route::get('/guru/pengumuman-kelas', \App\Livewire\Guru\PengumumanKelas::class)
      ->name('guru.pengumuman-kelas')
@@ -214,3 +295,15 @@ Route::get('/guru/pengumuman-kelas', \App\Livewire\Guru\PengumumanKelas::class)
 Route::get('/siswa/pengumuman-kelas', \App\Livewire\Siswa\PengumumanSekolah::class)
      ->name('siswa.pengumuman-kelas')
      ->middleware(['auth', 'siswa']);
+
+// =============================================================================
+// ERROR ROUTES
+// =============================================================================
+Route::get('/unauthorized', function () {
+    return view('errors.unauthorized');
+})->name('unauthorized');
+
+// Fallback untuk 404
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});
