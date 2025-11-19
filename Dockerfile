@@ -6,9 +6,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /var/www/html
 
-COPY . .
+# Copy composer files FIRST
+COPY composer.json composer.lock* ./
 
-RUN composer install --no-dev --no-scripts --no-interaction
+# Install dependencies
+RUN composer install --no-dev --no-scripts --no-interaction --no-progress
+
+# Copy app code
+COPY . .
 
 EXPOSE 8000
 
