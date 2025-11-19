@@ -6,10 +6,15 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
+    libonig-dev \
+    libxml2-dev \
+    default-mysql-client \
     zip unzip git curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip mbstring xml
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /var/www/html
 
@@ -27,6 +32,11 @@ RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views 
 RUN chmod -R 775 bootstrap/cache storage
 RUN chown -R www-data:www-data bootstrap/cache storage
 
+# Clear cache and disable maintenance mode during build
+RUN php artisan config:clear || true
+RUN php artisan route:clear || true
+RUN php artisan view:clear || true
+RUN if [ -f "storage/framework/down" ]; then php artisan up; fi
 
 EXPOSE 8000
 
