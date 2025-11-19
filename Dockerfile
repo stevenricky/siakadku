@@ -27,6 +27,9 @@ RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views 
 RUN chmod -R 775 bootstrap/cache storage
 RUN chown -R www-data:www-data bootstrap/cache storage
 
+# CLEAR CACHE - INI YANG BARU
+RUN php artisan config:clear && php artisan cache:clear && php artisan route:clear
+
 EXPOSE 8000
 
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
