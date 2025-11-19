@@ -1,66 +1,19 @@
 <?php
+// routes/web.php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileController;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-// =============================================================================
-// DEBUG ROUTES - TEMPORARY
-// =============================================================================
 
-// Test basic Laravel
-Route::get('/test', function() {
-    return response()->json([
-        'status' => 'success', 
-        'message' => 'Laravel is running',
-        'timestamp' => now()
-    ]);
-});
 
-// Test database connection
-Route::get('/test-db', function() {
-    try {
-        DB::connection()->getPdo();
-        return response()->json([
-            'status' => 'success',
-            'database' => 'Connected successfully',
-            'driver' => DB::connection()->getDriverName()
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'database' => $e->getMessage()
-        ], 500);
-    }
-});
 
-// Test environment
-Route::get('/test-env', function() {
-    return response()->json([
-        'app_env' => app()->environment(),
-        'app_debug' => config('app.debug'),
-        'app_url' => config('app.url'),
-        'db_connection' => config('database.default')
-    ]);
-});
-
-// Test view
-Route::get('/test-view', function() {
-    return view('welcome');
-});
-
-// =============================================================================
-// EXISTING ROUTES
-// =============================================================================
-
-// Test maintenance middleware
+// routes/web.php - tambahkan
 Route::get('/test-maintenance-middleware', function () {
     return "Jika Anda melihat ini, middleware maintenance TIDAK berjalan";
 })->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
-
 // =============================================================================
 // MAINTENANCE ROUTES 
 // =============================================================================
@@ -71,28 +24,39 @@ Route::get('/maintenance-page', function () {
 Route::post('/maintenance-access', [App\Http\Controllers\MaintenanceController::class, 'access'])
     ->name('maintenance.access');
 
-// Simple root route - temporary fix
+// =============================================================================
+// ROUTE LAINNYA...
+// =============================================================================
+
+// Simple root route
 Route::get('/', function () {
-    return response()->json([
-        'status' => 'success',
-        'message' => 'SiakadKu Laravel Application',
-        'timestamp' => now(),
-        'routes' => [
-            '/test' => 'Test Laravel',
-            '/test-db' => 'Test Database', 
-            '/test-env' => 'Test Environment',
-            '/login' => 'Login Page'
-        ]
-    ]);
+    if (auth()->check()) {
+        $user = auth()->user();
+        
+        return match($user->role) {
+            'admin' => redirect('/admin/dashboard'),
+            'guru' => redirect('/guru/dashboard'),
+            'siswa' => redirect('/siswa/dashboard'),
+            default => redirect('/login')
+        };
+    }
+    
+    // User belum login, redirect ke login
+    return redirect('/login');
 });
+
+// routes/web.php - GANTI route login
 
 // Authentication routes dengan middleware maintenance
 Route::get('login', [LoginController::class, 'create'])
     ->name('login')
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
+    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
 
 Route::post('login', [LoginController::class, 'store'])
-    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class);
+    ->middleware(\App\Http\Middleware\CheckMaintenanceMode::class); // Gunakan class langsung
+
+
+
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
@@ -102,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    
+
 });
 
 // Theme toggle route
