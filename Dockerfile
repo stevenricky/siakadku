@@ -28,5 +28,5 @@ RUN chmod -R 775 bootstrap/cache storage
 RUN chown -R www-data:www-data bootstrap/cache storage
 
 EXPOSE 8000
-
+RUN php artisan migrate --force
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
