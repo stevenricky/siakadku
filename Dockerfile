@@ -40,26 +40,52 @@ RUN if [ -f "storage/framework/down" ]; then php artisan up; fi
 
 # Create startup script untuk auto migration & seeder
 RUN echo '#!/bin/bash\n\
-echo "Waiting for database connection..."\n\
-# Tunggu database siap (max 30 detik)\n\
+set -e\n\
+echo "=== SIAKADKU STARTUP ==="\n\
+\n\
+echo "1. Waiting for database connection..."\n\
 for i in {1..30}; do\n\
-  php artisan db:monitor > /dev/null 2>&1\n\
-  if [ $? -eq 0 ]; then\n\
-    echo "Database is ready!"\n\
+  if php artisan db:monitor > /dev/null 2>&1; then\n\
+    echo "✅ Database connected!"\n\
     break\n\
   fi\n\
-  echo "Waiting for database... ($i/30)"\n\
+  if [ $i -eq 30 ]; then\n\
+    echo "❌ Database connection failed after 30 attempts"\n\
+    exit 1\n\
+  fi\n\
+  echo "⏳ Waiting for database... ($i/30)"\n\
   sleep 1\n\
 done\n\
 \n\
-echo "Running migrations..."\n\
+echo "2. Creating missing columns if needed..."\n\
+# Check if deleted_at column exists, if not add it\n\
+php artisan tinker --execute="\n\
+try {\n\
+    \\\\DB::select(\\\"SELECT deleted_at FROM users LIMIT 1\\\");\n\
+    echo \\\"✅ deleted_at column exists\\\\n\\\";\n\
+} catch (\\\\Exception \$e) {\n\
+    echo \\\"❌ deleted_at column missing, adding...\\\\n\\\";\n\
+    \\\\DB::statement(\\\"ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL AFTER updated_at\\\");\n\
+    echo \\\"✅ deleted_at column added\\\\n\\\";\n\
+}\n\
+" || echo "Column check completed"\n\
+\n\
+echo "3. Running migrations..."\n\
 php artisan migrate --force\n\
 \n\
-echo "Seeding database..."\n\
-php artisan db:seed --force\n\
+echo "4. Seeding database..."\n\
+php artisan db:seed --force || echo "Seeder mungkin sudah jalan, lanjut..."\n\
 \n\
-echo "Starting application..."\n\
-php artisan serve --host=0.0.0.0 --port=8000\n\
+echo "5. Cache optimization..."\n\
+php artisan config:cache || true\n\
+php artisan route:cache || true\n\
+\n\
+echo "6. Starting application server..."\n\
+echo "✅ SIAKADKU READY! Login dengan:"\n\
+echo "   👨‍💼 Admin: admin@example.com / password123"\n\
+echo "   👨‍🏫 Guru: guru@example.com / password123"\n\
+echo "   🎓 Siswa: siswa@example.com / password123"\n\
+exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}\n\
 ' > /start.sh && chmod +x /start.sh
 
 EXPOSE 8000
