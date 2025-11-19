@@ -38,6 +38,30 @@ RUN php artisan route:clear || true
 RUN php artisan view:clear || true
 RUN if [ -f "storage/framework/down" ]; then php artisan up; fi
 
+# Create startup script untuk auto migration & seeder
+RUN echo '#!/bin/bash\n\
+echo "Waiting for database connection..."\n\
+# Tunggu database siap (max 30 detik)\n\
+for i in {1..30}; do\n\
+  php artisan db:monitor > /dev/null 2>&1\n\
+  if [ $? -eq 0 ]; then\n\
+    echo "Database is ready!"\n\
+    break\n\
+  fi\n\
+  echo "Waiting for database... ($i/30)"\n\
+  sleep 1\n\
+done\n\
+\n\
+echo "Running migrations..."\n\
+php artisan migrate --force\n\
+\n\
+echo "Seeding database..."\n\
+php artisan db:seed --force\n\
+\n\
+echo "Starting application..."\n\
+php artisan serve --host=0.0.0.0 --port=8000\n\
+' > /start.sh && chmod +x /start.sh
+
 EXPOSE 8000
 
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+CMD ["/start.sh"]
