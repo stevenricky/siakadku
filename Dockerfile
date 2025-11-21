@@ -27,20 +27,20 @@ RUN rm -rf database/migrations/
 COPY . .
 
 # Pastikan tidak ada migration files yang tersisa
-RUN rm -rf database/migrations/*.php
+RUN find database/migrations/ -name "*.php" -type f -delete
 
 RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Verifikasi PHP extensions
-RUN echo "<?php phpinfo(); ?>" > /var/www/html/phpinfo.php
+# Buat file dummy untuk mencegah artisan migrate
+RUN echo "<?php\n// Migration files disabled for production\nreturn [];" > database/migrations/.gitkeep
 
-# Startup script TANPA MIGRATION
+# Startup script SANGAT SEDERHANA
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
-echo "📦 Caching configurations..."\n\
+# Langsung cache dan jalankan Apache\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 \n\
