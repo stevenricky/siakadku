@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.2-apache
 
 # Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock* ./
@@ -24,12 +27,15 @@ RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# --- FIXED MULTILINE HERE ---
+# Apache configuration
+COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+# Startup script
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
 echo "⏳ Waiting for MySQL..."\n\
-until mysqladmin ping -h "$MYSQLHOST" -u "$MYSQLUSER" -p"$MYSQLPASSWORD" --silent; do\n\
+until mysqladmin ping -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent; do\n\
   sleep 2\n\
 done\n\
 echo "✅ DB ready!"\n\
@@ -39,9 +45,9 @@ php artisan db:seed --force || true\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 \n\
-php artisan serve --host=0.0.0.0 --port=${PORT:-8000}\n\
+echo "✅ Application ready!"\n\
+exec apache2-foreground\n\
 ' > /start.sh && chmod +x /start.sh
-# ----------------------------
 
 EXPOSE 8000
 
