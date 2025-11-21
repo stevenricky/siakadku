@@ -22,15 +22,18 @@ COPY composer.json composer.lock* ./
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts
 
 # HAPUS SEMUA MIGRATION FILES sebelum copy aplikasi
-RUN rm -rf database/migrations/*.php
+RUN rm -rf database/migrations/
 
 COPY . .
+
+# Pastikan tidak ada migration files yang tersisa
+RUN rm -rf database/migrations/*.php
 
 RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Startup script TANPA MIGRATION
+# Startup script TANPA MIGRATION - hanya cache dan serve
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
@@ -40,7 +43,11 @@ until mysqladmin ping -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --si
 done\n\
 echo "✅ DB ready!"\n\
 \n\
-echo "✅ No migrations to run - Application ready!"\n\
+echo "📦 Caching configurations..."\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+\n\
+echo "✅ Application ready! No migrations executed."\n\
 exec apache2-foreground\n\
 ' > /start.sh && chmod +x /start.sh
 
