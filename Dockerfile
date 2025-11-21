@@ -30,7 +30,6 @@ RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
 # Apache configuration
 COPY .docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Startup script
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
@@ -40,8 +39,9 @@ until mysqladmin ping -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --si
 done\n\
 echo "✅ DB ready!"\n\
 \n\
-php artisan migrate --force\n\
-php artisan db:seed --force || true\n\
+# Skip migrations if they fail\n\
+php artisan migrate --force --no-interaction || true\n\
+\n\
 php artisan config:cache\n\
 php artisan route:cache\n\
 \n\
