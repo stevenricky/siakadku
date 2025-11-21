@@ -27,7 +27,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# SKIP ALL MIGRATIONS - FIX MANUALLY LATER
+# SKIP MIGRATIONS COMPLETELY - FIX MANUALLY LATER
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
@@ -37,8 +37,8 @@ until mysqladmin ping -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" --si
 done\n\
 echo "✅ DB ready!"\n\
 \n\
-echo "⏭️  SKIPPING ALL MIGRATIONS - Manual fix required"\n\
-echo "⚠️  Please run migrations manually after deployment"\n\
+echo "⏭️  SKIPPING ALL MIGRATIONS - Manual setup required"\n\
+echo "📝 Please run: php artisan migrate:fresh --seed"\n\
 \n\
 php artisan config:cache\n\
 php artisan route:cache\n\
