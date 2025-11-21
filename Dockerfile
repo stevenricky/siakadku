@@ -4,9 +4,9 @@ FROM php:8.2-apache
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev \
     libzip-dev libonig-dev libxml2-dev \
-    zip unzip git curl \
+    default-mysql-client zip unzip git curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo zip mbstring xml
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip mbstring xml
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- \
@@ -21,16 +21,22 @@ COPY composer.json composer.lock* ./
 
 RUN composer install --no-dev --no-interaction --no-progress --no-scripts
 
-# HAPUS SEMUA MIGRATION FILES
+# HAPUS SEMUA MIGRATION FILES sebelum copy aplikasi
 RUN rm -rf database/migrations/
 
 COPY . .
+
+# Pastikan tidak ada migration files yang tersisa
+RUN rm -rf database/migrations/*.php
 
 RUN mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# SIMPLE STARTUP - NO MYSQL CHECK
+# Verifikasi PHP extensions
+RUN echo "<?php phpinfo(); ?>" > /var/www/html/phpinfo.php
+
+# Startup script TANPA MIGRATION
 RUN echo '#!/bin/sh\n\
 echo "🚀 Starting Siakadku..."\n\
 \n\
